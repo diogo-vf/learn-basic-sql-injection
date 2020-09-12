@@ -10,7 +10,7 @@ you've to find the password of an user thanks to the API response
     - change password and username by your db credentials
 - write on terminal : `php -S localhost:80`
 
-# walkthrough
+# solutions step by step
 1. use url to insert injection
 2. the web site return 4 types of informations
     - active account
