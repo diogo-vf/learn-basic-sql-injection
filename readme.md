@@ -8,6 +8,7 @@ you've to find the password of an user thanks to the API response
 - create database and run `hkg1_sqli_2017-04-03.sql`
 - open active.php
     - change password and username by your db credentials
+- write on terminal : `php -S localhost:80`
 
 # walkthrough
 1. use url to insert injection
